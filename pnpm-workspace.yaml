@@ -24,3 +24,15 @@ onlyBuiltDependencies:
 overrides:
   dompurify: 3.4.17
   fast-uri: 3.1.9
+  undici@6: 6.29.1
+  undici@7: 7.30.2
+  brace-expansion@1: 1.1.22
+  brace-expansion@2: 2.1.8
+  brace-expansion@5: 5.0.13
+  "@xmldom/xmldom": 0.8.15
+  js-yaml: 4.3.2
+  sharp: 0.35.5
+  source-map-js: 1.2.4
+  "@vitest/mocker": 4.1.12
+  vite@7: 7.3.8
+  electron@43: 43.8.12
