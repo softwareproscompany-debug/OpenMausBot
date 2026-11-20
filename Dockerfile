@@ -93,6 +93,23 @@ RUN apt-get update \
     libxshmfence1 libgbm1 fonts-noto-color-emoji fonts-noto-cjk fonts-freefont-ttf \
   && rm -rf /var/lib/apt/lists/* \
   && useradd --create-home --home-dir /data --shell /bin/bash maus
+# node:24-bookworm-slim's npm 11.19.1 bundles undici 6.28.0, brace-expansion
+# 5.0.9, ip-address 10.5.0 and postcss-selector-parser 7.1.4 in its own
+# node_modules, where no app lockfile reaches; image scans flag all four in
+# the final image. Swap in the fixed same-major releases (npm pack verifies
+# each tarball against the registry) before this npm installs anything else.
+RUN npm_bundle=/usr/local/lib/node_modules/npm/node_modules \
+  && fix_dir="$(mktemp -d)" && cd "$fix_dir" \
+  && for spec in undici@6.29.1 brace-expansion@5.0.13 ip-address@10.7.6 postcss-selector-parser@7.2.1; do npm pack --loglevel error "$spec" >/dev/null; done \
+  && for tarball in ./*.tgz; do \
+       pkg="$(basename "$tarball" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+\.tgz$//')" \
+       && test -d "$npm_bundle/$pkg" \
+       && rm -rf "$npm_bundle/$pkg" && mkdir -p "$npm_bundle/$pkg" \
+       && tar -xzf "$tarball" -C "$npm_bundle/$pkg" --strip-components=1; \
+     done \
+  && cd / && rm -rf "$fix_dir" \
+  && node -e "const root = '/usr/local/lib/node_modules/npm/node_modules/'; const want = { undici: '6.29.1', 'brace-expansion': '5.0.13', 'ip-address': '10.7.6', 'postcss-selector-parser': '7.2.1' }; for (const [pkg, version] of Object.entries(want)) { const got = require(root + pkg + '/package.json').version; if (got !== version) { console.error(pkg + ': expected ' + version + ', found ' + got); process.exit(1); } } console.log('npm bundle:', Object.entries(want).map(([p, v]) => p + '@' + v).join(' '))" \
+  && npm --version
 # The bots' browser (docs/plans/browser-engine.md): the pinned agent-browser
 # and a Chrome for Testing with its libraries, so a server bot can browse.
 # Pin here and in server/browser-engine-release.ts together.
